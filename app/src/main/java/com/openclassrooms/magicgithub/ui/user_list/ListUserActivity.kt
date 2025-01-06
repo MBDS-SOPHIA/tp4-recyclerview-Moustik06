@@ -4,26 +4,43 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.openclassrooms.magicgithub.R
+import com.openclassrooms.magicgithub.databinding.ActivityListUserBinding
 import com.openclassrooms.magicgithub.di.Injection.getRepository
 import com.openclassrooms.magicgithub.model.User
 
 class ListUserActivity : AppCompatActivity(), UserListAdapter.Listener {
-    // FOR DESIGN ---
-    lateinit var recyclerView: RecyclerView
-    lateinit var fab: FloatingActionButton
-
-    // FOR DATA ---
+    private lateinit var binding: ActivityListUserBinding
     private lateinit var adapter: UserListAdapter
+    private lateinit var itemTouchHelper: ItemTouchHelper
 
-    // OVERRIDE ---
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_list_user)
-        configureFab()
+        binding = ActivityListUserBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
         configureRecyclerView()
+        configureFab()
+    }
+
+    private fun configureRecyclerView() {
+        adapter = UserListAdapter(this)
+        binding.activityListUserRv.adapter = adapter
+
+        // Configuration du swipe et drag&drop
+        val callback = UserItemTouchHelper(adapter)
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper.attachToRecyclerView(binding.activityListUserRv)
+    }
+
+    private fun configureFab() {
+        binding.activityListUserFab.setOnClickListener {
+            getRepository().addRandomUser()
+            loadData()
+        }
     }
 
     override fun onResume() {
@@ -31,28 +48,11 @@ class ListUserActivity : AppCompatActivity(), UserListAdapter.Listener {
         loadData()
     }
 
-    // CONFIGURATION ---
-    private fun configureRecyclerView() {
-        recyclerView = findViewById(R.id.activity_list_user_rv)
-        adapter = UserListAdapter(this)
-        recyclerView.adapter = adapter
-    }
-
-    private fun configureFab() {
-        fab = findViewById(R.id.activity_list_user_fab)
-        fab.setOnClickListener(View.OnClickListener { view: View? ->
-            getRepository().addRandomUser()
-            loadData()
-        })
-    }
-
     private fun loadData() {
         adapter.updateList(getRepository().getUsers())
     }
 
-    // ACTIONS ---
     override fun onClickDelete(user: User) {
-        Log.d(ListUserActivity::class.java.name, "User tries to delete a item.")
         getRepository().deleteUser(user)
         loadData()
     }
